@@ -25,6 +25,7 @@ def connect!
   ActiveRecord::Base.connection.execute 'CREATE TABLE employers (id INTEGER NOT NULL PRIMARY KEY, deleted_at DATETIME)'
   ActiveRecord::Base.connection.execute 'CREATE TABLE employees (id INTEGER NOT NULL PRIMARY KEY, deleted_at DATETIME)'
   ActiveRecord::Base.connection.execute 'CREATE TABLE jobs (id INTEGER NOT NULL PRIMARY KEY, employer_id INTEGER NOT NULL, employee_id INTEGER NOT NULL, deleted_at DATETIME)'
+  ActiveRecord::Base.connection.execute 'CREATE TABLE history_jobs (employer_id INTEGER NOT NULL, employee_id INTEGER NOT NULL, start_at DATETIME, end_at DATETIME, deleted_at DATETIME)';
   ActiveRecord::Base.connection.execute 'CREATE TABLE custom_column_models (id INTEGER NOT NULL PRIMARY KEY, destroyed_at DATETIME)'
   ActiveRecord::Base.connection.execute 'CREATE TABLE custom_sentinel_models (id INTEGER NOT NULL PRIMARY KEY, deleted_at DATETIME NOT NULL)'
   ActiveRecord::Base.connection.execute 'CREATE TABLE non_paranoid_models (id INTEGER NOT NULL PRIMARY KEY, parent_model_id INTEGER)'
@@ -261,6 +262,13 @@ class ParanoiaTest < test_framework
     assert_equal 0, employer.employees.count
     assert_equal 0, employee.jobs.count
     assert_equal 0, employee.employers.count
+  end
+
+  def test_has_many_through_without_primary_key
+    employer = Employer.create
+    employee = Employee.create
+    job = HistoryJob.create :employer => employer, :employee => employee
+    job.destroy
   end
 
   def test_delete_behavior_for_callbacks
@@ -683,15 +691,25 @@ class Employer < ActiveRecord::Base
   acts_as_paranoid
   has_many :jobs
   has_many :employees, :through => :jobs
+  has_many :history_jobs
+  has_many :history_employees, :through => :history_jobs
 end
 
 class Employee < ActiveRecord::Base
   acts_as_paranoid
   has_many :jobs
   has_many :employers, :through => :jobs
+  has_many :history_jobs
+  has_many :history_employers, :through => :history_jobs
 end
 
 class Job < ActiveRecord::Base
+  acts_as_paranoid
+  belongs_to :employer
+  belongs_to :employee
+end
+
+class HistoryJob < ActiveRecord::Base
   acts_as_paranoid
   belongs_to :employer
   belongs_to :employee
