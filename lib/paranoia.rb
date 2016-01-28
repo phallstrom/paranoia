@@ -236,7 +236,7 @@ class ActiveRecord::Base
     self.paranoia_sentinel_value = options.fetch(:sentinel_value) { Paranoia.default_sentinel_value }
     self.paranoia_dependent_recovery_window = options[:dependent_recovery_window] || Paranoia.default_dependent_recovery_window
     def self.paranoia_scope
-      where(paranoia_column => paranoia_sentinel_value)
+      where(table_name => {paranoia_column.to_sym => paranoia_sentinel_value})
     end
     default_scope { paranoia_scope }
 
