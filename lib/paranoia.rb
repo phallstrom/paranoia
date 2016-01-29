@@ -27,7 +27,16 @@ module Paranoia
 
     def with_deleted
       if ActiveRecord::VERSION::STRING >= "4.1"
-        unscope where: paranoia_column
+        # Now that we pass a symbol into the default scope
+        # we need to go to extra lengths to remove the scope when requested
+        # as Rails `unscope` explicitly looks for strings.
+        all.tap do |x| 
+          x.where_values = x.where_values.reject do |rel| 
+            rel.left.relation.table_name == self.table_name &&
+            rel.left.name == self.paranoia_column.to_sym &&
+            rel.right.val == self.paranoia_sentinel_value
+          end
+        end
       else
         all.tap { |x| x.default_scoped = false }
       end
