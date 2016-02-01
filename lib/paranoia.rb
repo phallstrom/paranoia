@@ -32,6 +32,7 @@ module Paranoia
         # as Rails `unscope` explicitly looks for strings.
         all.tap do |x| 
           x.where_values = x.where_values.reject do |rel| 
+            rel.is_a?(Arel::Nodes::Node) &&
             rel.left.relation.table_name == self.table_name &&
             rel.left.name == self.paranoia_column.to_sym &&
             rel.right.val == self.paranoia_sentinel_value
